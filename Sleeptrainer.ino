@@ -15,6 +15,7 @@ CRGB leds[NUM_LEDS];
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
+#include <Credentials.h>
 const char *ssidMinor     = SSID_MINOR;
 const char *passwordMinor = PASSWORD_MINOR;
 
@@ -37,8 +38,8 @@ const byte WAKE  = 3;
 
 
 // times are in "minutes of the day"
-word wakeTime  = 7 * 60 + 30;
-word soonTime  = wakeTime - 30;
+word wakeTime  = (7 * 60) + 0;
+word soonTime  = wakeTime - 15;
 word sleepTime = 19 * 60 + 30;
 
 ////////////////////////////////////
