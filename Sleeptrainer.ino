@@ -14,6 +14,7 @@ CRGB leds[NUM_LEDS];
 // change next line to use with another board/shield
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <ESP8266mDNS.h> 
 
 #include <Credentials.h>
 const char *ssidMinor     = SSID_MINOR;
@@ -24,23 +25,31 @@ const char *passwordMajor = PASSWORD_MAJOR;
 
 WiFiUDP ntpUDP;
 WiFiServer server(80);
+
 // Variable to store the HTTP request
 String header;
+word WINTERTIME = 1;  // set 1 or 0
 
-//-->                                           UTC-offset, update frequency?
-NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 2*3600, 3600*1000);
+NTPClient timeClient(
+  ntpUDP, 
+  "europe.pool.ntp.org", 
+  3600 + WINTERTIME * 3600, // UTC-offset
+  3600 * 1000               // update frequency in ms.
+);
 
 const int ledPin = LED_BUILTIN;// the number of the LED pin
 const byte INIT  = 0;
 const byte SLEEP = 1;
 const byte SOON  = 2;
 const byte WAKE  = 3;
+const byte KIGA  = 4;
 
 
 // times are in "minutes of the day"
-word wakeTime  = (7 * 60) + 0;
+word wakeTime  =  7 * 60 + 0;
 word soonTime  = wakeTime - 15;
-word sleepTime = 19 * 60 + 30;
+word kigaTime  =  7 * 60 + 50;
+word sleepTime = 19 * 60 + 0;
 
 ////////////////////////////////////
 // C L O C K 
@@ -91,6 +100,16 @@ void setClockStatus(byte newState) {
       0,1,1,1,1,1,1,0,
       0,0,1,1,1,1,0,0,
     };
+    boolean bag[NUM_LEDS] = {
+      0,0,0,0,0,0,0,0,
+      0,0,1,1,1,1,0,0,
+      0,0,1,0,0,1,0,0,
+      1,1,1,1,1,1,1,1,
+      1,1,1,1,1,1,1,1,
+      1,1,1,1,1,1,1,1,
+      1,1,1,1,1,1,1,1,
+      1,1,1,1,1,1,1,1,
+    };
 
 
   if (newState == SLEEP) {
@@ -108,6 +127,10 @@ void setClockStatus(byte newState) {
     FastLED.setBrightness(25);
     displayPix(happy, CRGB::Green, CRGB::Black, false);
   }
+  if (newState == KIGA) {
+    FastLED.setBrightness(25);
+    displayPix(bag, CRGB::Blue, CRGB::Black, false);
+  }
 }
 
 
@@ -124,6 +147,9 @@ void checkClockState() {
   }
   if (minuteOfDay > sleepTime) {
     desiredStatus = SLEEP;
+  }
+  if (minuteOfDay > kigaTime) {
+    desiredStatus = KIGA;
   }
   setClockStatus(desiredStatus);
 }
@@ -341,6 +367,8 @@ void print_http_response(WiFiClient client) {
   client.println("<p><a href=\"/WAKE/earlier\"> <button class=\"button\">earlier</button></a>");
   client.println("<a href=\"/WAKE/later\"><button class=\"button\">later</button></a></p>");
 
+  client.println("<p>KIGA = " + formatMoD(kigaTime) + "</p>");
+
   client.println("<p>SLEEP = " + formatMoD(sleepTime) + "</p>");
   client.println("<p><a href=\"/SLEEP/earlier\"> <button class=\"button\">earlier</button></a>");
   client.println("<a href=\"/SLEEP/later\"><button class=\"button\">later</button></a></p>");
@@ -411,6 +439,8 @@ void ledTest() {
   delay(ms);
   setClockStatus(WAKE);
   delay(ms);
+  setClockStatus(KIGA);
+  delay(ms);
 
   all(CRGB::Black);
 }
@@ -440,6 +470,11 @@ void setup() {
   Serial.print(F("Starting Web-server. "));
   server.begin();
   Serial.println(F("Done."));
+
+  if (!MDNS.begin("sleep")) {             // Start the mDNS responder for esp8266.local
+    Serial.println("Error setting up MDNS responder!");
+  }
+  Serial.println("mDNS responder started for sleep.local");
  
   Serial.println('clock boot complete');
 }
