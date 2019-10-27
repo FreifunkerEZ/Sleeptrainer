@@ -46,10 +46,11 @@ const byte KIGA  = 4;
 
 
 // times are in "minutes of the day"
-word wakeTime  =  7 * 60 + 0;
+word wakeTime  =  7 * 60;
 word soonTime  = wakeTime - 15;
 word kigaTime  =  7 * 60 + 50;
-word sleepTime = 19 * 60 + 0;
+word playTime  = 15 * 60;
+word sleepTime = 19 * 60;
 
 ////////////////////////////////////
 // C L O C K 
@@ -145,11 +146,14 @@ void checkClockState() {
   if (minuteOfDay > wakeTime) {
     desiredStatus = WAKE;
   }
-  if (minuteOfDay > sleepTime) {
-    desiredStatus = SLEEP;
-  }
   if (minuteOfDay > kigaTime) {
     desiredStatus = KIGA;
+  }
+  if (minuteOfDay > playTime) {
+    desiredStatus = WAKE;
+  }
+  if (minuteOfDay > sleepTime) {
+    desiredStatus = SLEEP;
   }
   setClockStatus(desiredStatus);
 }
