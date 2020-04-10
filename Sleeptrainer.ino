@@ -28,12 +28,12 @@ WiFiServer server(80);
 
 // Variable to store the HTTP request
 String header;
-word WINTERTIME = 1;  // set 1 or 0
+word SUMMERTIME = 1;  // set 1 or 0
 
 NTPClient timeClient(
   ntpUDP, 
   "europe.pool.ntp.org", 
-  3600 + WINTERTIME * 3600, // UTC-offset
+  3600 + SUMMERTIME * 3600, // UTC-offset
   3600 * 1000               // update frequency in ms.
 );
 
@@ -134,6 +134,47 @@ void setClockStatus(byte newState) {
   }
 }
 
+word dow() {
+  long day = timeClient.getEpochTime() / 86400L;
+  return (day+5) % 7;
+}
+
+bool isWochenende() {
+  // samstag ist 0
+  // sonntag ist 1
+  return (dow() <= 1); 
+}
+
+void printDow() {
+  Serial.print("Wochentag: ");
+  Serial.print( dow() );
+  switch (dow() ) {
+    case 0:
+      Serial.println(" Sa");
+      break;
+    case 1:
+      Serial.println(" So");
+      break;
+    case 2:
+      Serial.println(" Mo");
+      break;
+    case 3:
+      Serial.println(" Di");
+      break;
+    case 4:
+      Serial.println(" Mi");
+      break;
+    case 5:
+      Serial.println(" Do");
+      break;
+    case 6:
+      Serial.println(" Fr");
+      break;
+    default:
+      // statements
+      break;
+  }
+}
 
 void checkClockState() {
   timeClient.update();
@@ -146,7 +187,7 @@ void checkClockState() {
   if (minuteOfDay > wakeTime) {
     desiredStatus = WAKE;
   }
-  if (minuteOfDay > kigaTime) {
+  if (minuteOfDay > kigaTime && ! isWochenende() ) {
     desiredStatus = KIGA;
   }
   if (minuteOfDay > playTime) {
@@ -481,6 +522,7 @@ void setup() {
   Serial.println("mDNS responder started for sleep.local");
  
   Serial.println('clock boot complete');
+  printDow();
 }
 
 void loop() {
